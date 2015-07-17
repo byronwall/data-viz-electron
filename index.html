@@ -1,138 +1,157 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>Quadtree</title>
+<head>
+  
+</head>
 <style>
-  .point {
-    fill: #999;
-    stroke: #fff;
-  }
 
-  .point.scanned {
-    fill: orange;
-    fill-opacity: 1;
-    stroke: brown;
-  }
+body {
+  font: 10px sans-serif;
+  height:900px;
+  width:100%;
+}
 
-  .point.selected {
-    fill: red;
-    fill-opacity: 1;
-  }
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
 
-  .node {
-    fill: none;
-    stroke: #ccc;
-    shape-rendering: crispEdges;
-  }
+.dot {
+  stroke: #000;
+}
 
-  .brush .extent {
-    stroke: #fff;
-    fill-opacity: .125;
-    shape-rendering: crispEdges;
-  }
 </style>
-
 <body>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-  <script>
-    var width = 700,
-      height = 500;
-
-    var data = d3.range(5000).map(function() {
-      return [Math.random() * width, Math.random() * width];
+  Hello!!!
+<script src="./assets/js/d3.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript">
+  
+  console.log("running code")
+  
+  document.addEventListener("DOMContentLoaded", function(){
+    document.body.addEventListener("dragover", function(e){     
+      e.preventDefault();
+      e.stopPropagation();    
+      
+    })
+    
+    document.body.addEventListener("drop", function(e){
+      console.log("drop triggered")
+      
+      console.log(e);
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      var files = e.dataTransfer.files;
+      
+      console.log(e.dataTransfer.files[0].path)
+      
+      buildD3(e.dataTransfer.files[0].path);
+      
+      
+    })
+    
+    document.body.addEventListener("click", function(){
+      console.log("clicked");
     });
-
-    var quadtree = d3.geom.quadtree()
-      .extent([
-        [-1, -1],
-        [width + 1, height + 1]
-      ])
-      (data);
-
-    var brush = d3.svg.brush()
-      .x(d3.scale.identity().domain([0, width]))
-      .y(d3.scale.identity().domain([0, height]))
-      .extent([
-        [100, 100],
-        [200, 200]
-      ])
-      .on("brush", brushed);
-
-    var svg = d3.select("body").append("svg")
-      .attr("width", width)
-      .attr("height", height);
-
-    svg.selectAll(".node")
-      .data(nodes(quadtree))
-      .enter().append("rect")
-      .attr("class", "node")
-      .attr("x", function(d) {
-        return d.x;
-      })
-      .attr("y", function(d) {
-        return d.y;
-      })
-      .attr("width", function(d) {
-        return d.width;
-      })
-      .attr("height", function(d) {
-        return d.height;
-      });
-
-    var point = svg.selectAll(".point")
-      .data(data)
-      .enter().append("circle")
-      .attr("class", "point")
-      .attr("cx", function(d) {
-        return d[0];
-      })
-      .attr("cy", function(d) {
-        return d[1];
-      })
-      .attr("r", 4);
-
-    svg.append("g")
-      .attr("class", "brush")
-      .call(brush);
-
-    brushed();
-
-    function brushed() {
-      var extent = brush.extent();
-      point.each(function(d) {
-        d.scanned = d.selected = false;
-      });
-      search(quadtree, extent[0][0], extent[0][1], extent[1][0], extent[1][1]);
-      point.classed("scanned", function(d) {
-        return d.scanned;
-      });
-      point.classed("selected", function(d) {
-        return d.selected;
-      });
-    }
-
-    // Collapse the quadtree into an array of rectangles.
-    function nodes(quadtree) {
-      var nodes = [];
-      quadtree.visit(function(node, x1, y1, x2, y2) {
-        nodes.push({
-          x: x1,
-          y: y1,
-          width: x2 - x1,
-          height: y2 - y1
+    
+    console.log("events are added")       
+  })
+  
+    var buildD3 = (function(path){
+  
+      var margin = {top: 20, right: 20, bottom: 30, left: 40},
+          width = 960 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+      
+      var x = d3.scale.linear()
+          .range([0, width]);
+      
+      var y = d3.scale.linear()
+          .range([height, 0]);
+      
+      var color = d3.scale.category10();
+      
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
+      
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left");
+      
+      var svg = d3.select("body").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      
+      d3.tsv(path, function(error, data) {
+        if (error) throw error;
+      
+        data.forEach(function(d) {
+          d.sepalLength = +d.sepalLength;
+          d.sepalWidth = +d.sepalWidth;
         });
-      });
-      return nodes;
-    }
+      
+        x.domain(d3.extent(data, function(d) { return d.sepalWidth; })).nice();
+        y.domain(d3.extent(data, function(d) { return d.sepalLength; })).nice();
+      
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis)
+          .append("text")
+            .attr("class", "label")
+            .attr("x", width)
+            .attr("y", -6)
+            .style("text-anchor", "end")
+            .text("Sepal Width (cm)");
+      
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+          .append("text")
+            .attr("class", "label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("Sepal Length (cm)")
+      
+        svg.selectAll(".dot")
+            .data(data)
+          .enter().append("circle")
+            .attr("class", "dot")
+            .attr("r", 3.5)
+            .attr("cx", function(d) { return x(d.sepalWidth); })
+            .attr("cy", function(d) { return y(d.sepalLength); })
+            .style("fill", function(d) { return color(d.species); });
+      
+        var legend = svg.selectAll(".legend")
+            .data(color.domain())
+          .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+      
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", color);
+      
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function(d) { return d; });
+      })
 
-    // Find the nodes within the specified rectangle.
-    function search(quadtree, x0, y0, x3, y3) {
-      quadtree.visit(function(node, x1, y1, x2, y2) {
-        var p = node.point;
-        if (p) {
-          p.scanned = true;
-          p.selected = (p[0] >= x0) && (p[0] < x3) && (p[1] >= y0) && (p[1] < y3);
-        }
-        return x1 >= x3 || y1 >= y3 || x2 < x0 || y2 < y0;
-      });
-    }
-  </script>
+});
+
+</script>
