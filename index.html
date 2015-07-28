@@ -1,157 +1,223 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+
 <head>
-  
+  <link rel="stylesheet" type="text/css" href="./assets/css/d3.parcoords.css">
 </head>
 <style>
+  body {
+    font: 10px sans-serif;
+    height: 900px;
+    width: 100%;
+  }
 
-body {
-  font: 10px sans-serif;
-  height:900px;
-  width:100%;
-}
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
 
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
+  .dot {
+    stroke: #000;
+  }
 
-.dot {
-  stroke: #000;
-}
-
+  #data-parc {
+    height: 300px;
+    width: 100%;
+  }
 </style>
+
 <body>
-  Hello!!!
-<script src="./assets/js/d3.js"></script>
-<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-<script type="text/javascript">
-  
-  console.log("running code")
-  
-  document.addEventListener("DOMContentLoaded", function(){
-    document.body.addEventListener("dragover", function(e){     
-      e.preventDefault();
-      e.stopPropagation();    
-      
-    })
-    
-    document.body.addEventListener("drop", function(e){
-      console.log("drop triggered")
-      
-      console.log(e);
-      
-      e.preventDefault();
-      e.stopPropagation();
-      
-      var files = e.dataTransfer.files;
-      
-      console.log(e.dataTransfer.files[0].path)
-      
-      buildD3(e.dataTransfer.files[0].path);
-      
-      
-    })
-    
-    document.body.addEventListener("click", function(){
-      console.log("clicked");
-    });
-    
-    console.log("events are added")       
-  })
-  
-    var buildD3 = (function(path){
-  
-      var margin = {top: 20, right: 20, bottom: 30, left: 40},
-          width = 960 - margin.left - margin.right,
-          height = 500 - margin.top - margin.bottom;
-      
-      var x = d3.scale.linear()
-          .range([0, width]);
-      
-      var y = d3.scale.linear()
-          .range([height, 0]);
-      
-      var color = d3.scale.category10();
-      
-      var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient("bottom");
-      
-      var yAxis = d3.svg.axis()
-          .scale(y)
-          .orient("left");
-      
-      var svg = d3.select("body").append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-      
-      d3.tsv(path, function(error, data) {
-        if (error) throw error;
-      
-        data.forEach(function(d) {
-          d.sepalLength = +d.sepalLength;
-          d.sepalWidth = +d.sepalWidth;
-        });
-      
-        x.domain(d3.extent(data, function(d) { return d.sepalWidth; })).nice();
-        y.domain(d3.extent(data, function(d) { return d.sepalLength; })).nice();
-      
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis)
-          .append("text")
-            .attr("class", "label")
-            .attr("x", width)
-            .attr("y", -6)
-            .style("text-anchor", "end")
-            .text("Sepal Width (cm)");
-      
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-          .append("text")
-            .attr("class", "label")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text("Sepal Length (cm)")
-      
-        svg.selectAll(".dot")
-            .data(data)
-          .enter().append("circle")
-            .attr("class", "dot")
-            .attr("r", 3.5)
-            .attr("cx", function(d) { return x(d.sepalWidth); })
-            .attr("cy", function(d) { return y(d.sepalLength); })
-            .style("fill", function(d) { return color(d.species); });
-      
-        var legend = svg.selectAll(".legend")
-            .data(color.domain())
-          .enter().append("g")
-            .attr("class", "legend")
-            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-      
-        legend.append("rect")
-            .attr("x", width - 18)
-            .attr("width", 18)
-            .attr("height", 18)
-            .style("fill", color);
-      
-        legend.append("text")
-            .attr("x", width - 24)
-            .attr("y", 9)
-            .attr("dy", ".35em")
-            .style("text-anchor", "end")
-            .text(function(d) { return d; });
+  <h1 id="hdr">Hello!!!</h1>
+  <h1 id="hdr-load">Load data</h1>
+
+  <div id="data-table"></div>
+  <div id="data-parc" class="parcoords"></div>
+  <div id="data-plot"></div>
+
+  <script src="./assets/js/d3.js"></script>
+  <script src="./assets/js/jquery-2.1.4.js"></script>
+  <script src="./assets/js/d3.parcoords.js"></script>
+
+  <script type="text/javascript">
+
+    console.log("running code")
+
+    document.addEventListener("DOMContentLoaded", function() {
+      document.body.addEventListener("dragover", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
       })
 
-});
+      document.body.addEventListener("drop", function(e) {
+        console.log("drop triggered")
 
-</script>
+        e.preventDefault();
+        e.stopPropagation();
+
+        var files = e.dataTransfer.files;
+
+        console.log(e.dataTransfer.files[0].path)
+        //run the code on the dropped path
+        loadCharts(e.dataTransfer.files[0].path)
+      })
+
+      $("#hdr").click(function() {
+        location.reload();
+      })
+      $("#hdr-load").click(function(){
+        loadCharts("./data/data.tsv")
+      })
+
+      console.log("events are added")
+    })
+
+    var loadCharts = function(path) {
+
+      d3.tsv(path, function(error, data) {
+        buildD3(data);
+
+        //buidl the table
+        tabulate(data, "#data-table")
+
+        //parcoords
+        var parc = d3.parcoords()("#data-parc")
+          .data(data)
+          .render()
+          .brushMode("1D-axes")
+      });
+    }
+
+    ///creates a <TABLE> from an object of data
+    var tabulate = function(data, container, columns) {
+
+      container = typeof container !== 'undefined' ? container : document.body;
+      columns = typeof columns !== 'undefined' ? columns : d3.keys(data[0]);
+
+      var table = d3.select(container).append("table"),
+        thead = table.append("thead"),
+        tbody = table.append("tbody");
+
+      // append the header row
+      thead.append("tr")
+        .selectAll("th")
+        .data(columns)
+        .enter()
+        .append("th")
+        .text(function(column) {
+          return column;
+        });
+
+      // create a row for each object in the data
+      var rows = tbody.selectAll("tr")
+        .data(data)
+        .enter()
+        .append("tr");
+
+      // create a cell in each row for each column
+      var cells = rows.selectAll("td")
+        .data(function(row) {
+          return columns.map(function(column) {
+            return {
+              column: column,
+              value: row[column]
+            };
+          });
+        })
+        .enter()
+        .append("td")
+        .text(function(d) {
+          return d.value;
+        });
+
+      return table;
+    }
+
+    //TODO: generalize this code to work for an arbitrary data set... or change out to a different library
+    var buildD3 = (function(data) {
+
+      var margin = {
+          top: 20,
+          right: 20,
+          bottom: 30,
+          left: 40
+        },
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+      var x = d3.scale.linear()
+        .range([0, width]);
+
+      var y = d3.scale.linear()
+        .range([height, 0]);
+
+      var color = d3.scale.category10();
+
+      var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+      var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+      var svg = d3.select("#data-plot").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      data.forEach(function(d) {
+        d.sepalLength = +d.sepalLength;
+        d.sepalWidth = +d.sepalWidth;
+      });
+
+      x.domain(d3.extent(data, function(d) {
+        return d.sepalWidth;
+      })).nice();
+      y.domain(d3.extent(data, function(d) {
+        return d.sepalLength;
+      })).nice();
+
+      svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .append("text")
+        .attr("class", "label")
+        .attr("x", width)
+        .attr("y", -6)
+        .style("text-anchor", "end")
+        .text("Sepal Width (cm)");
+
+      svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("class", "label")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Sepal Length (cm)")
+
+      svg.selectAll(".dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 3.5)
+        .attr("cx", function(d) {
+          return x(d.sepalWidth);
+        })
+        .attr("cy", function(d) {
+          return y(d.sepalLength);
+        })
+        .style("fill", function(d) {
+          return color(d.species);
+        });
+
+    });
+  </script>
+</body>
